@@ -25,16 +25,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const query = gql`
     {
       post(id: "/${path}/", idType: URI) {
-        id
         link
-        dateGmt
-        modifiedGmt
-        content
-        author {
-          node {
-            name
-          }
-        }
         featuredImage {
           node {
             sourceUrl
@@ -62,7 +53,15 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 
 interface PostProps {
-  post: any;
+  post: {
+    link: string;
+    featuredImage: {
+      node: {
+        sourceUrl: string;
+        altText: string;
+      };
+    };
+  };
   host: string;
   path: string;
 }
@@ -80,15 +79,14 @@ const Post: React.FC<PostProps> = (props) => {
         <meta property="og:type" content="article" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" content={host.split('.')[0]} />
-        <meta property="article:published_time" content={post.dateGmt} />
-        <meta property="article:modified_time" content={post.modifiedGmt} />
       </Head>
       <div className="post-container">
-        <img
-          src={post.featuredImage.node.sourceUrl}
-          alt={post.featuredImage.node.altText}
-        />
-        <article dangerouslySetInnerHTML={{ __html: post.content }} />
+        <a href={post.link} target="_blank" rel="noopener noreferrer">
+          <img
+            src={post.featuredImage.node.sourceUrl}
+            alt={post.featuredImage.node.altText}
+          />
+        </a>
       </div>
     </>
   );
