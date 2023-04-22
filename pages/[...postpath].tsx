@@ -6,14 +6,12 @@ import { GraphQLClient, gql } from 'graphql-request';
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const endpoint = process.env.GRAPHQL_ENDPOINT as string;
   const graphQLClient = new GraphQLClient(endpoint);
-  const referringURL = ctx.req.headers?.referer || null;
   const pathArr = ctx.query.postpath as Array<string>;
   const path = pathArr.join('/');
-  console.log(path);
   const fbclid = ctx.query.fbclid;
 
   // redirect if facebook is the referer or request contains fbclid
-  if (referringURL?.includes('facebook.com') || fbclid) {
+  if (ctx.req.headers?.referer?.includes('facebook.com') || fbclid) {
     return {
       redirect: {
         permanent: false,
@@ -25,7 +23,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const query = gql`
     {
       post(id: "/${path}/", idType: URI) {
-        link
+        id
+        content
         featuredImage {
           node {
             sourceUrl
@@ -45,7 +44,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   return {
     props: {
-      path,
       post: data.post,
       host: ctx.req.headers.host,
     },
@@ -53,40 +51,28 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 };
 
 interface PostProps {
-  post: {
-    link: string;
-    featuredImage: {
-      node: {
-        sourceUrl: string;
-        altText: string;
-      };
-    };
-  };
+  post: any;
   host: string;
-  path: string;
 }
 
 const Post: React.FC<PostProps> = (props) => {
-  const { post, host, path } = props;
+  const { post, host } = props;
 
   return (
     <>
       <Head>
         <meta property="og:image" content={post.featuredImage.node.sourceUrl} />
         <meta property="og:image:alt" content={post.featuredImage.node.altText} />
-        <link rel="canonical" href={`https://${host}/${path}`} />
-        <meta property="og:url" content={`https://${host}/${path}`} />
         <meta property="og:type" content="article" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" content={host.split('.')[0]} />
       </Head>
       <div className="post-container">
-        <a href={post.link} target="_blank" rel="noopener noreferrer">
-          <img
-            src={post.featuredImage.node.sourceUrl}
-            alt={post.featuredImage.node.altText}
-          />
-        </a>
+        <img
+          src={post.featuredImage.node.sourceUrl}
+          alt={post.featuredImage.node.altText}
+        />
+        <article dangerouslySetInnerHTML={{ __html: post.content }} />
       </div>
     </>
   );
